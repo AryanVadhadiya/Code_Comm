@@ -6,12 +6,24 @@ const app = express();
 require('dotenv').config();
 
 // middlewares
-// Allow CORS from the configured FRONTEND_URL; if not provided, allow all origins
+// Determine CORS origin behaviour:
+// - If FRONTEND_URL is set, use that exact origin (recommended for production).
+// - Otherwise reflect the request origin (origin: true) which allows browser requests
+//   while still sending the Access-Control-Allow-Origin header. This helps avoid
+//   blocking requests during debugging when FRONTEND_URL isn't configured.
+const corsOrigin = process.env.FRONTEND_URL || true;
+app.use((req, res, next) => {
+    // Simple request logger to make debugging easier in Render logs
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} Origin:`, req.get('Origin'));
+    next();
+});
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
+// Ensure preflight OPTIONS requests are handled with the same CORS policy
+app.options('*', cors({ origin: corsOrigin, credentials: true }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
