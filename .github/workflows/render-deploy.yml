@@ -1,0 +1,28 @@
+name: Trigger Render Deploys
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backend deploy (if configured)
+        if: ${{ secrets.BACKEND_SERVICE_ID != '' }}
+        run: |
+          echo "Triggering backend deploy..."
+          curl -sS -X POST "https://api.render.com/v1/services/${{ secrets.BACKEND_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":false}'
+
+      - name: Trigger frontend deploy (if configured)
+        if: ${{ secrets.FRONTEND_SERVICE_ID != '' }}
+        run: |
+          echo "Triggering frontend deploy..."
+          curl -sS -X POST "https://api.render.com/v1/services/${{ secrets.FRONTEND_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":false}'
