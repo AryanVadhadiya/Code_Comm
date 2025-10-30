@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.p-splitter-gutter-handle{
+    background-color: rgb(255, 255, 255);
+}
+.p-splitter-gutter{
+    background-color: rgb(21, 21, 25);
+}
+.p-splitter-gutter:hover{
+    background-color:rgb(82, 74, 74);
+    opacity: 50%;
+}
+
+.CodeMirror.cm-s-darcula{
+    height: 100vh !important;
+    overflow-x: hidden;
+}
+
+.user-avatar{
+    background: linear-gradient(135deg, rgb(196, 192, 192),rgb(91, 89, 89))!important;
+    /* margin-left: -10px !important; */
+    overflow-x: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.onlineUsers{
+    display: flex !important;
+    flex-wrap: wrap;
+    overflow-x: auto !important;
+    /* margin-left: 3rem !important; */
+    border-radius: 0.75rem;
+    gap: 0.35rem;
+}
+
+
+.topNav{
+    height: 6vh; /* ~5-10% of viewport height */
+    min-height: 44px;
+    max-height: 72px;
+    background-color: rgb(31,41,55); /* slightly darker */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.mainContent{
+    height: calc(100vh - 6vh);
+}
+
+.userCount{
+    font-size: 0.85rem;
+    color: rgb(226,232,240);
+}
+
+.usersArea{
+    background-color: rgb(31,41,55); /* tailwind gray-800 */
+    padding-top: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    height: 100%;
+}
+
+.user-avatar{
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+}
+
+.divider {
+    position: absolute;
+    /* default divider - overridden inline for small right strip */
+    left: 95%;
+    border-left: 1px solid rgba(0,0,0,0.5);
+    height: 100%;
+}
+
+.custom-select.MuiInputBase-root {
+    color: rgb(163, 162, 162);                  /* Text color */
+}
