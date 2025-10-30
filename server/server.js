@@ -34,6 +34,10 @@ const { Server } = require("socket.io");
 // code for real time chat application
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
+    // Enable per-message compression to reduce bandwidth when large code buffers are sent
+    perMessageDeflate: {
+        threshold: 1024, // only compress messages > 1KB
+    },
     cors: {
         origin: process.env.FRONTEND_URL || '*',
         methods: ["GET", "POST", "PUT", "DELETE"],
@@ -108,6 +112,7 @@ let usernames = {};
 let mapping = {};
 let roomcode = {};
 let roomlanguage = {};
+let roomTypingInterval = {};
 
 async function savecode(id, code) {
     try {
@@ -154,6 +159,11 @@ io.on('connection', (socket) => {
                 io.to(socket.id).emit('mode for new user',roomlanguage[id]);
             }
 
+            // If a typing interval is configured for this room, send it to the newcomer
+            if (roomTypingInterval[id] !== undefined) {
+                io.to(socket.id).emit('Typing interval for new user', roomTypingInterval[id]);
+            }
+
             io.to(id).emit('User list for frontend', usernames[id]);
 
         }
@@ -162,16 +172,37 @@ io.on('connection', (socket) => {
 
     socket.on('Updated code for backend', ({ codetopass, line, ch }) => {
         roomcode[mapping[socket.id]] = codetopass;
-        io.to(mapping[socket.id]).emit("Updated code for users", { codetopass, line, ch });
+        // Exclude sender to avoid echo and reduce load; sender already has the latest content
+        socket.to(mapping[socket.id]).emit("Updated code for users", { codetopass, line, ch });
     })
+    // New: accept batched CodeMirror patches and broadcast to others while keeping server snapshot updated
+    socket.on('Code patches for backend', ({ patches, snapshot, line, ch }) => {
+        // Keep authoritative snapshot on the server for persistence and new joiners
+        if (typeof snapshot === 'string') {
+            roomcode[mapping[socket.id]] = snapshot;
+        }
+        // Broadcast only the patches to reduce payload to other clients
+        socket.to(mapping[socket.id]).emit('Code patches for users', { patches, line, ch });
+    });
     socket.on('Updated mode for backend', (lang) => {
-        io.to(mapping[socket.id]).emit("Updated mode for users", lang);
+        // Exclude sender; their editor mode is already set locally
+        socket.to(mapping[socket.id]).emit("Updated mode for users", lang);
     })
 
     socket.on('Updated langauge for backend', (value) => {
         roomlanguage[mapping[socket.id]] = value;
-        io.to(mapping[socket.id]).emit("Updated language for users", roomlanguage[mapping[socket.id]]);
+        // Exclude sender; their dropdown is already updated
+        socket.to(mapping[socket.id]).emit("Updated language for users", roomlanguage[mapping[socket.id]]);
     })
+
+    // Allow clients (or an admin UI) to set per-room typing interval (debounce/throttle) in milliseconds
+    socket.on('Set typing interval for backend', (ms) => {
+        const roomId = mapping[socket.id];
+        // Clamp between 10ms and 500ms for safety
+        const clamped = Math.max(10, Math.min(500, Number(ms) || 50));
+        roomTypingInterval[roomId] = clamped;
+        io.to(roomId).emit('Updated typing interval for users', clamped);
+    });
 
     socket.on('disconnect', async () => {
         // console.log(user disconnected ${socket.id});
@@ -190,6 +221,7 @@ io.on('connection', (socket) => {
             // cleanup using xid (the room id) rather than mapping[socket.id] which was deleted
             delete roomcode[xid];
             delete roomlanguage[xid];
+            delete roomTypingInterval[xid];
             delete usersocket[xid];
             delete usernames[xid];
         }
